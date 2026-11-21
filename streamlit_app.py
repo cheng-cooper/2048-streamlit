@@ -36,6 +36,8 @@ except FileNotFoundError:
 from app import app, redis_client
 
 app.config["ACCOUNTS_IN_REDIS"] = redis_client is not None
+# Streamlit can refresh the frontend files without restarting the Flask module.
+app.jinja_env.auto_reload = True
 
 
 @st.cache_resource(show_spinner=False)
