@@ -35,6 +35,33 @@ except FileNotFoundError:
 from app import app, redis_client
 
 app.config["ACCOUNTS_IN_REDIS"] = redis_client is not None
+
+
+@st.cache_resource(show_spinner=False)
+def seed_demo_rankings():
+    records = (
+        ("青禾", 1840, None),
+        ("晚風", 2968, None),
+        ("山雀", 11640, {"elapsed_ms": 482350, "steps": 934}),
+        ("橙雨", 14820, {"elapsed_ms": 539120, "steps": 812}),
+        ("星野", 13264, {"elapsed_ms": 568640, "steps": 887}),
+    )
+    seed_client = app.test_client()
+    for name, score, clear in records:
+        entry = {"name": name, "score": score}
+        if clear:
+            entry["clear"] = clear
+        response = seed_client.post("/api/leaderboard", json=entry)
+        if response.status_code >= 400:
+            raise RuntimeError("Could not seed demo rankings.")
+
+
+try:
+    seed_demo_rankings()
+except RuntimeError:
+    # The game remains playable while the ranking storage is unavailable.
+    pass
+
 if "game_client" not in st.session_state:
     st.session_state.game_client = app.test_client()
     st.session_state.game_frame = 0
