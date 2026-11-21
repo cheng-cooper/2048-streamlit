@@ -10,7 +10,7 @@
 <body>
 <main>
     <div class="page-actions">
-        <button id="open-ranking" type="button" aria-haspopup="dialog" aria-controls="ranking-dialog">排行榜</button>
+        <button id="open-ranking" type="button" aria-controls="ranking-section">排行榜</button>
         {% if account %}
         <form data-account-action="logout">
             <button type="submit">登出</button>
@@ -85,12 +85,10 @@
             <p id="save-status" role="status"></p>
         </section>
     </section>
-    <dialog id="ranking-dialog" class="leaderboard" aria-labelledby="ranking-title">
+    <section id="ranking-section" class="leaderboard" aria-labelledby="ranking-title" hidden>
         <header>
-            <h2 id="ranking-title">排行榜</h2>
-            <form method="dialog">
-                <button autofocus>關閉</button>
-            </form>
+            <h2 id="ranking-title" tabindex="-1">排行榜</h2>
+            <button id="ranking-back" type="button">返回主頁</button>
         </header>
         <div class="ranking-categories" role="group" aria-label="排行榜類別">
             <button type="button" data-ranking="scores" aria-pressed="true">最高分</button>
@@ -100,7 +98,7 @@
         <p id="clear-ranking-note" class="ranking-note" hidden>須合成 2048 才能上榜。</p>
         <p id="ranking-status" role="status"></p>
         <ol id="ranking"></ol>
-    </dialog>
+    </section>
 </main>
 </body>
 </html>
