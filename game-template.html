@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>2048 排行榜</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script defer src="{{ url_for('static', filename='game.js') }}"></script>
+</head>
+<body>
+<main>
+    <div class="page-actions">
+        <button id="open-ranking" type="button" aria-haspopup="dialog" aria-controls="ranking-dialog">排行榜</button>
+        {% if account %}
+        <form data-account-action="logout">
+            <button type="submit">登出</button>
+            <p role="status"></p>
+        </form>
+        {% endif %}
+    </div>
+    <section id="welcome" class="leaderboard" aria-labelledby="welcome-title">
+        <h1 id="welcome-title" tabindex="-1">2048</h1>
+        {% if account %}
+        <form id="start-game" data-account="{{ account }}">
+            <p>已登入 <strong>{{ account }}</strong></p>
+            <button type="submit">開始遊戲</button>
+        </form>
+        {% else %}
+        <form id="start-game">
+            <label for="name">訪客暱稱</label>
+            <div class="form-row">
+                <input id="name" maxlength="20" required autocomplete="nickname">
+                <button type="submit">訪客遊玩</button>
+            </div>
+        </form>
+        {% for action, label, autocomplete in [('login', '登入', 'current-password'), ('register', '註冊', 'new-password')] %}
+        <details class="account-panel">
+            <summary>{{ label }}</summary>
+            <form data-account-action="{{ action }}">
+                <label for="{{ action }}-username">帳號（暱稱）</label>
+                <input id="{{ action }}-username" name="username" required minlength="3" maxlength="20" autocomplete="username">
+                {% if action == 'register' %}
+                <p class="account-hint">這個暱稱會顯示在排行榜。</p>
+                {% endif %}
+                <label for="{{ action }}-password">密碼</label>
+                <input id="{{ action }}-password" name="password" type="password" required minlength="8" maxlength="128" autocomplete="{{ autocomplete }}">
+                <button type="submit">{{ label }}</button>
+                <p role="status"></p>
+            </form>
+        </details>
+        {% endfor %}
+        {% endif %}
+    </section>
+    <section id="game" class="game" aria-label="2048 遊戲" hidden>
+        <header>
+            <h1>2048</h1>
+            <div class="score">目前分數 <strong id="score">0</strong></div>
+        </header>
+        <p class="game-metrics">時間 <strong id="elapsed">0:00.000</strong><span>步數 <strong id="steps">0</strong></span></p>
+        <div class="controls">
+            <div>
+                <p>玩家 <strong id="player"></strong></p>
+                <p>用方向鍵或滑動棋盤，合併相同數字。</p>
+            </div>
+            <div class="round-actions">
+                <button id="return-home" type="button">返回主頁</button>
+                <button id="restart" type="button">重新開始</button>
+                <button id="end-round" type="button">結束本局</button>
+            </div>
+        </div>
+        <div class="play-area">
+            <div id="board" aria-label="4 × 4 棋盤"></div>
+            <div class="direction-pad" role="group" aria-label="移動方塊">
+                <button type="button" data-direction="up" aria-label="向上"></button>
+                <button type="button" data-direction="left" aria-label="向左"></button>
+                <button type="button" data-direction="down" aria-label="向下"></button>
+                <button type="button" data-direction="right" aria-label="向右"></button>
+            </div>
+        </div>
+        <section id="round-result" class="leaderboard round-result" aria-labelledby="result-title" hidden>
+            <h2 id="result-title" tabindex="-1">本局結算</h2>
+            <p id="game-status"></p>
+            <p id="result-metrics"></p>
+            <button id="save" type="button" hidden>重試登記</button>
+            <p id="save-status" role="status"></p>
+        </section>
+    </section>
+    <dialog id="ranking-dialog" class="leaderboard" aria-labelledby="ranking-title">
+        <header>
+            <h2 id="ranking-title">排行榜</h2>
+            <form method="dialog">
+                <button autofocus>關閉</button>
+            </form>
+        </header>
+        <div class="ranking-categories" role="group" aria-label="排行榜類別">
+            <button type="button" data-ranking="scores" aria-pressed="true">最高分</button>
+            <button type="button" data-ranking="fastest" aria-pressed="false">最快通關</button>
+            <button type="button" data-ranking="fewest" aria-pressed="false">最少步數</button>
+        </div>
+        <p id="clear-ranking-note" class="ranking-note" hidden>須合成 2048 才能上榜。</p>
+        <p id="ranking-status" role="status"></p>
+        <ol id="ranking"></ol>
+    </dialog>
+</main>
+</body>
+</html>

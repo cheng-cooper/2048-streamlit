@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>2048 排行榜</title>
+</head>
+<body>
+<script>
+const send = (type, data = {}) => {
+    window.parent.postMessage({isStreamlitMessage: true, type: `streamlit:${type}`, ...data}, "*");
+};
+let mounted = false;
+let sequence = Promise.resolve();
+let pending;
+let frameHeight;
+
+window.request2048 = (path, options) => {
+    const request = sequence.then(() => new Promise((resolve, reject) => {
+        const id = crypto.randomUUID();
+        const timeout = setTimeout(() => {
+            pending = null;
+            reject(new Error("連線逾時，請重試。"));
+        }, 20000);
+        pending = {id, resolve, timeout};
+        send("setComponentValue", {
+            dataType: "json",
+            value: {id, path, method: options?.method || "GET", data: options?.body ? JSON.parse(options.body) : null},
+        });
+    }));
+    sequence = request.catch(() => {});
+    return request;
+};
+
+window.addEventListener("message", event => {
+    if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
+    const {markup, stylesheet, script, response} = event.data.args;
+    if (!mounted) {
+        mounted = true;
+        const style = document.createElement("style");
+        style.textContent = stylesheet + "\nbody { min-height: 560px; }";
+        document.head.append(style);
+        document.body.insertAdjacentHTML("afterbegin", markup);
+        const gameScript = document.createElement("script");
+        gameScript.textContent = script;
+        document.body.append(gameScript);
+        const resize = () => {
+            const height = Math.ceil(document.body.getBoundingClientRect().height);
+            if (height === frameHeight) return;
+            frameHeight = height;
+            send("setFrameHeight", {height});
+        };
+        new ResizeObserver(resize).observe(document.body);
+        resize();
+    }
+    if (pending && response?.id === pending.id) {
+        clearTimeout(pending.timeout);
+        pending.resolve({ok: response.ok, json: async () => response.data});
+        pending = null;
+    }
+});
+
+send("componentReady", {apiVersion: 1});
+</script>
+</body>
+</html>
