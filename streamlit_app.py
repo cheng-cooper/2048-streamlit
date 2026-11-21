@@ -5,7 +5,26 @@ from streamlit.components.v1 import declare_component
 
 
 ROOT = Path(__file__).resolve().parent
-st.set_page_config(page_title="2048 排行榜")
+st.set_page_config(page_title="2048 排行榜", layout="wide")
+st.html("""
+<style>
+    [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        background-color: #f6f5ee;
+        color: #252d29;
+    }
+    [data-testid="stHeader"] button {
+        color: #252d29;
+    }
+    [data-testid="stMainBlockContainer"] {
+        max-width: none;
+        padding: 2.5rem 0 0;
+    }
+    [data-testid="stMainBlockContainer"] iframe {
+        display: block;
+        width: 100%;
+    }
+</style>
+""")
 
 # Streamlit exposes top-level secrets as environment variables when loaded.
 try:
