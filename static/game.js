@@ -32,6 +32,9 @@ let finishSlide;
 let steps, startedAt, elapsedMs, clock;
 let activeRanking = "scores";
 let rankingData;
+let rankingTimer;
+let rankingLoading = false;
+let rankingRevision = 0;
 
 function formatTime(milliseconds) {
     const seconds = Math.floor(milliseconds / 1000);
@@ -203,6 +206,7 @@ function move(direction) {
 }
 
 async function loadRanking(entry) {
+    const revision = entry ? ++rankingRevision : rankingRevision;
     const response = await gameRequest("/api/leaderboard", entry && {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -210,8 +214,21 @@ async function loadRanking(entry) {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "無法讀取排行榜。");
+    if (revision !== rankingRevision) return;
     rankingData = data;
     renderRanking();
+}
+
+async function refreshRanking() {
+    if (!rankingDialog.open || document.hidden || saving || rankingLoading) return;
+    rankingLoading = true;
+    try {
+        await loadRanking();
+    } catch {
+        rankingStatus.textContent = "暫時無法更新排行榜，稍後會自動重試。";
+    } finally {
+        rankingLoading = false;
+    }
 }
 
 function renderRanking() {
@@ -284,7 +301,14 @@ endButton.addEventListener("click", () => {
     endRound("stopped");
     render();
 });
-document.querySelector("#open-ranking").addEventListener("click", () => rankingDialog.showModal());
+document.querySelector("#open-ranking").addEventListener("click", () => {
+    rankingDialog.showModal();
+    clearInterval(rankingTimer);
+    void refreshRanking();
+    rankingTimer = setInterval(refreshRanking, 5000);
+});
+rankingDialog.addEventListener("close", () => clearInterval(rankingTimer));
+document.addEventListener("visibilitychange", refreshRanking);
 rankingDialog.addEventListener("click", event => {
     if (event.target !== rankingDialog) return;
     const { left, right, top, bottom } = rankingDialog.getBoundingClientRect();
@@ -332,7 +356,6 @@ async function submitRound() {
     saveStatus.textContent = "登記中…";
     render();
     try {
-        await initialRanking;
         await loadRanking(entry);
         saved = true;
         saveStatus.textContent = "已登記本局成績。";
@@ -345,4 +368,3 @@ async function submitRound() {
     }
 }
 save.addEventListener("click", submitRound);
-const initialRanking = loadRanking().catch(error => { rankingStatus.textContent = error.message; });
