@@ -1,0 +1,5 @@
+__pycache__/
+.venv/
+leaderboard.sqlite3*
+accounts.sqlite3*
+.streamlit/secrets.toml

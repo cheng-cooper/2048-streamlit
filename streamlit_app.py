@@ -1,0 +1,55 @@
+from pathlib import Path
+
+import streamlit as st
+from streamlit.components.v1 import declare_component
+
+
+ROOT = Path(__file__).resolve().parent
+st.set_page_config(page_title="2048 排行榜")
+
+# Streamlit exposes top-level secrets as environment variables when loaded.
+try:
+    st.secrets.get("REDIS_URL")
+except FileNotFoundError:
+    pass
+
+from app import app, redis_client
+
+app.config["ACCOUNTS_IN_REDIS"] = redis_client is not None
+if "game_client" not in st.session_state:
+    st.session_state.game_client = app.test_client()
+    st.session_state.game_frame = 0
+    st.session_state.game_response = None
+
+client = st.session_state.game_client
+game = declare_component("game2048", path=ROOT / "streamlit_component")
+document = client.get("/").get_data(as_text=True)
+request = game(
+    markup=document.split("<body>", 1)[1].split("</body>", 1)[0],
+    stylesheet=(ROOT / "static/style.css").read_text(encoding="utf-8"),
+    script=(ROOT / "static/game.js").read_text(encoding="utf-8"),
+    response=st.session_state.game_response,
+    key=f"game2048-{st.session_state.game_frame}",
+    default=None,
+)
+
+routes = {
+    "/api/leaderboard": {"GET", "POST"},
+    "/api/account/login": {"POST"},
+    "/api/account/register": {"POST"},
+    "/api/account/logout": {"POST"},
+}
+if isinstance(request, dict):
+    request_id = request.get("id")
+    previous = st.session_state.game_response
+    if isinstance(request_id, str) and (previous is None or previous["id"] != request_id):
+        path, method = request.get("path"), request.get("method")
+        if isinstance(path, str) and isinstance(method, str) and method in routes.get(path, ()):
+            response = client.open(path, method=method, json=request.get("data"))
+            result = response.get_json(silent=True) or {"error": "伺服器暫時無法完成請求。"}
+            st.session_state.game_response = {"id": request_id, "ok": response.status_code < 400, "data": result}
+            if path.startswith("/api/account/") and response.status_code == 200:
+                st.session_state.game_frame += 1
+        else:
+            st.session_state.game_response = {"id": request_id, "ok": False, "data": {"error": "無效的請求。"}}
+        st.rerun()
