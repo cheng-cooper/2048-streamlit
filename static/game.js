@@ -81,7 +81,7 @@ function render() {
         resultMetrics.textContent = `分數 ${score.toLocaleString("zh-TW")} · 時間 ${formatTime(elapsedMs)} · ${steps} 步`;
     }
     if (showResult && !game.hidden) resultTitle.focus();
-    if (showResult && outcome !== "stopped") void submitRound();
+    if (showResult) void submitRound();
 }
 
 function endRound(result) {
@@ -355,7 +355,7 @@ board.addEventListener("pointerup", event => {
     move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
 });
 async function submitRound() {
-    if (!player || !outcome || outcome === "stopped" || saving || saved) return;
+    if (!player || !outcome || saving || saved) return;
     const entry = { name: player, score, account: startForm.dataset.account || null };
     if (outcome === "won") entry.clear = { elapsed_ms: elapsedMs, steps };
     saving = true;

@@ -149,7 +149,8 @@ input {
     background: #fff;
 }
 ol { padding-left: 24px; margin-bottom: 0; }
-li { padding: 8px 0; border-bottom: 1px solid #e2e8df; overflow-wrap: anywhere; }
+li { padding: 8px 0; overflow-wrap: anywhere; }
+#ranking > li:not(:last-child) { border-bottom: 1px solid #e2e8df; }
 li strong { float: right; margin-left: 10px; }
 @media (max-width: 700px) {
     main { max-width: 520px; }
