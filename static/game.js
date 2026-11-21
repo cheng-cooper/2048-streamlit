@@ -9,7 +9,9 @@ const resultMetrics = document.querySelector("#result-metrics");
 const endButton = document.querySelector("#end-round");
 const rankingStatus = document.querySelector("#ranking-status");
 const ranking = document.querySelector("#ranking");
-const rankingDialog = document.querySelector("#ranking-dialog");
+const rankingSection = document.querySelector("#ranking-section");
+const openRankingButton = document.querySelector("#open-ranking");
+const rankingBack = document.querySelector("#ranking-back");
 const save = document.querySelector("#save");
 const saveStatus = document.querySelector("#save-status");
 const nickname = document.querySelector("#name");
@@ -78,7 +80,7 @@ function render() {
         gameStatus.textContent = messages[outcome];
         resultMetrics.textContent = `分數 ${score.toLocaleString("zh-TW")} · 時間 ${formatTime(elapsedMs)} · ${steps} 步`;
     }
-    if (showResult && !game.hidden && !rankingDialog.open) resultTitle.focus();
+    if (showResult && !game.hidden) resultTitle.focus();
     if (showResult && outcome !== "stopped") void submitRound();
 }
 
@@ -220,7 +222,7 @@ async function loadRanking(entry) {
 }
 
 async function refreshRanking() {
-    if (!rankingDialog.open || document.hidden || saving || rankingLoading) return;
+    if (rankingSection.hidden || document.hidden || saving || rankingLoading) return;
     rankingLoading = true;
     try {
         await loadRanking();
@@ -301,21 +303,26 @@ endButton.addEventListener("click", () => {
     endRound("stopped");
     render();
 });
-document.querySelector("#open-ranking").addEventListener("click", () => {
-    rankingDialog.showModal();
+openRankingButton.addEventListener("click", () => {
+    welcome.hidden = true;
+    game.hidden = true;
+    openRankingButton.hidden = true;
+    rankingSection.hidden = false;
+    rankingBack.textContent = player ? "返回遊戲" : "返回主頁";
+    document.querySelector("#ranking-title").focus();
     clearInterval(rankingTimer);
     void refreshRanking();
     rankingTimer = setInterval(refreshRanking, 5000);
 });
-rankingDialog.addEventListener("close", () => clearInterval(rankingTimer));
-document.addEventListener("visibilitychange", refreshRanking);
-rankingDialog.addEventListener("click", event => {
-    if (event.target !== rankingDialog) return;
-    const { left, right, top, bottom } = rankingDialog.getBoundingClientRect();
-    if (event.clientX < left || event.clientX >= right || event.clientY < top || event.clientY >= bottom) {
-        rankingDialog.close();
-    }
+rankingBack.addEventListener("click", () => {
+    clearInterval(rankingTimer);
+    rankingSection.hidden = true;
+    welcome.hidden = Boolean(player);
+    game.hidden = !player;
+    openRankingButton.hidden = false;
+    openRankingButton.focus();
 });
+document.addEventListener("visibilitychange", refreshRanking);
 rankingButtons.forEach(button => {
     button.addEventListener("click", () => {
         activeRanking = button.dataset.ranking;
@@ -329,7 +336,7 @@ directionButtons.forEach(button => {
 });
 document.addEventListener("keydown", event => {
     const direction = directions[event.key];
-    if (!player || rankingDialog.open || !direction || event.target.closest("input, textarea, select, [contenteditable]")) return;
+    if (!player || game.hidden || !direction || event.target.closest("input, textarea, select, [contenteditable]")) return;
     event.preventDefault();
     move(direction);
 });
