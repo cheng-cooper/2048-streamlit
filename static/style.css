@@ -122,8 +122,12 @@ button:disabled { opacity: .55; cursor: default; }
 #board.sliding > :not(.sliding-tile) { background: #4b665a; color: transparent; }
 #board > .sliding-tile { position: absolute; z-index: 1; pointer-events: none; }
 .leaderboard { background: #fffef9; border: 1px solid #e1e6dc; border-radius: 14px; padding: 24px; }
-#ranking-dialog { width: min(420px, calc(100% - 32px)); color: inherit; }
-#ranking-dialog::backdrop { background: #1e352b80; }
+#ranking-dialog {
+    width: min(420px, calc(100% - 32px));
+    color: inherit;
+    box-shadow: 0 16px 44px #1e352b38, 0 2px 8px #1e352b14;
+}
+#ranking-dialog::backdrop { background: transparent; }
 #welcome h1 { margin-bottom: 24px; }
 .account-panel { margin-top: 18px; }
 .account-panel summary { cursor: pointer; }
