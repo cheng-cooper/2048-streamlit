@@ -22,6 +22,7 @@ st.html("""
     [data-testid="stMainBlockContainer"] iframe {
         display: block;
         width: 100%;
+        min-height: calc(100dvh - 2.5rem);
     }
 </style>
 """)
