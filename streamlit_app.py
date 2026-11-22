@@ -48,6 +48,9 @@ def seed_demo_rankings():
         ("山雀", 11640, {"elapsed_ms": 482350, "steps": 934}),
         ("橙雨", 14820, {"elapsed_ms": 539120, "steps": 812}),
         ("星野", 13264, {"elapsed_ms": 568640, "steps": 887}),
+        ("霧島", 6248, None),
+        ("小滿", 4380, None),
+        ("白露", 12560, {"elapsed_ms": 514270, "steps": 978}),
     )
     seed_client = app.test_client()
     for name, score, clear in records:
