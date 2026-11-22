@@ -16,6 +16,12 @@ const save = document.querySelector("#save");
 const saveStatus = document.querySelector("#save-status");
 const nickname = document.querySelector("#name");
 const startForm = document.querySelector("#start-game");
+const personalRanking = startForm.dataset.account ? document.createElement("p") : null;
+if (personalRanking) {
+    personalRanking.className = "ranking-note";
+    personalRanking.hidden = true;
+    ranking.before(personalRanking);
+}
 const restartButton = document.querySelector("#restart");
 const homeButton = document.querySelector("#return-home");
 const welcome = document.querySelector("#welcome");
@@ -235,6 +241,13 @@ async function refreshRanking() {
 
 function renderRanking() {
     if (!rankingData) return;
+    if (personalRanking) {
+        personalRanking.hidden = activeRanking !== "scores" || !("personal" in rankingData);
+        const best = rankingData.personal;
+        personalRanking.textContent = best
+            ? `我的最高分 ${best.score.toLocaleString("zh-TW")} 分 · 目前第 ${best.rank.toLocaleString("zh-TW")} 名`
+            : "你還沒有最高分紀錄。完成一局就會顯示名次。";
+    }
     const entries = rankingData[activeRanking];
     ranking.replaceChildren(...entries.map(({ name, score, account, elapsed_ms, steps }) => {
         const item = document.createElement("li");
