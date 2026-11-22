@@ -98,6 +98,9 @@ def account_action(action):
 def leaderboard():
     entry = None
     clear = None
+    account = session.get("account")
+    member = ACCOUNT_PREFIX + account if account else None
+    personal = None
     if request.method == "POST":
         data = request.get_json(silent=True)
         if not isinstance(data, dict):
@@ -105,11 +108,10 @@ def leaderboard():
         name = data.get("name")
         name = name.strip() if isinstance(name, str) else ""
         score = data.get("score")
-        account = session.get("account")
         if "account" in data and data["account"] != account:
             return jsonify(error="登入狀態已變更，請重新整理後開始新的一局。"), 409
-        if account:
-            name = ACCOUNT_PREFIX + account
+        if member:
+            name = member
         elif not 1 <= len(name) <= 20 or not name.isprintable():
             return jsonify(error="暱稱須為 1 至 20 個字元。"), 400
         if type(score) is not int or not 0 <= score <= 10_000_000 or score % 4:
@@ -136,10 +138,18 @@ def leaderboard():
             if clear:
                 pipe.zadd(time_key, {name: elapsed_ms}, lt=True)
                 pipe.zadd(steps_key, {name: steps}, lt=True)
+            if member:
+                pipe.zrevrank(redis_key, member)
+                pipe.zscore(redis_key, member)
             pipe.zrange(redis_key, 0, 9, desc=True, withscores=True)
             pipe.zrange(time_key, 0, 9, withscores=True)
             pipe.zrange(steps_key, 0, 9, withscores=True)
-            rows, time_rows, step_rows = pipe.execute()[-3:]
+            results = pipe.execute()
+            rows, time_rows, step_rows = results[-3:]
+            if member:
+                rank, best = results[-5:-3]
+                if rank is not None:
+                    personal = {"rank": rank + 1, "score": int(best)}
     else:
         with closing(sqlite3.connect(app.config["SCORE_DB"])) as db, db:
             db.execute("CREATE TABLE IF NOT EXISTS scores (name TEXT PRIMARY KEY, score INTEGER NOT NULL)")
@@ -169,12 +179,24 @@ def leaderboard():
             step_rows = db.execute(
                 "SELECT name, steps FROM clears ORDER BY steps, name LIMIT 10"
             ).fetchall()
+            if member:
+                best = db.execute(
+                    "SELECT player.score, 1 + (SELECT COUNT(*) FROM scores AS other "
+                    "WHERE (other.score, other.name) > (player.score, player.name)) "
+                    "FROM scores AS player WHERE player.name = ?",
+                    (member,),
+                ).fetchone()
+                if best:
+                    personal = {"score": best[0], "rank": best[1]}
 
-    return jsonify(
+    response = dict(
         scores=ranking_entries(rows, "score"),
         fastest=ranking_entries(time_rows, "elapsed_ms"),
         fewest=ranking_entries(step_rows, "steps"),
     )
+    if member:
+        response["personal"] = personal
+    return jsonify(response)
 
 
 def ranking_entries(rows, metric):
